@@ -60,7 +60,7 @@ class FsStorage(models.Model):
             self.s3_bucket = self.directory_path or ""
             # Smart defaults for S3
             self.use_as_default_for_attachments = True
-            self.optimizes_directory_path = False  # S3 is flat, no need
+            self.optimizes_directory_path = True
             self.use_filename_obfuscation = True
             self.is_directory_path_in_url = True
 
@@ -128,14 +128,14 @@ class FsStorage(models.Model):
         records = super().create(vals_list)
         s3_records = records.filtered(lambda r: r.protocol == "s3")
         if s3_records:
-        s3_records.write(
-            {
-                "use_as_default_for_attachments": True,
-                "optimizes_directory_path": False,  # S3 is flat, no need
-                "use_filename_obfuscation": True,
-                "is_directory_path_in_url": True,
-            }
-        )
+            s3_records.write(
+                {
+                    "use_as_default_for_attachments": True,
+                    "optimizes_directory_path": True,
+                    "use_filename_obfuscation": True,
+                    "is_directory_path_in_url": True,
+                }
+            )
             for rec in s3_records:
                 rec._write_s3_fields_to_options()
         return records
