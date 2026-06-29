@@ -127,10 +127,18 @@ class FsStorage(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get("protocol") == "s3":
-                vals.setdefault("use_as_default_for_attachments", True)
-                vals.setdefault("optimizes_directory_path", True)
-                vals.setdefault("use_filename_obfuscation", True)
-                vals.setdefault("is_directory_path_in_url", True)
+                vals["use_as_default_for_attachments"] = vals.get(
+                    "use_as_default_for_attachments", True
+                )
+                vals["optimizes_directory_path"] = vals.get(
+                    "optimizes_directory_path", True
+                )
+                vals["use_filename_obfuscation"] = vals.get(
+                    "use_filename_obfuscation", True
+                )
+                vals["is_directory_path_in_url"] = vals.get(
+                    "is_directory_path_in_url", True
+                )
         records = super().create(vals_list)
         for rec in records:
             if rec.protocol == "s3":
