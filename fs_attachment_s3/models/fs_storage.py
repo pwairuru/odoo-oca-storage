@@ -125,23 +125,18 @@ class FsStorage(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        for vals in vals_list:
-            if vals.get("protocol") == "s3":
-                vals["use_as_default_for_attachments"] = vals.get(
-                    "use_as_default_for_attachments", True
-                )
-                vals["optimizes_directory_path"] = vals.get(
-                    "optimizes_directory_path", True
-                )
-                vals["use_filename_obfuscation"] = vals.get(
-                    "use_filename_obfuscation", True
-                )
-                vals["is_directory_path_in_url"] = vals.get(
-                    "is_directory_path_in_url", True
-                )
         records = super().create(vals_list)
-        for rec in records:
-            if rec.protocol == "s3":
+        s3_records = records.filtered(lambda r: r.protocol == "s3")
+        if s3_records:
+            s3_records.write(
+                {
+                    "use_as_default_for_attachments": True,
+                    "optimizes_directory_path": True,
+                    "use_filename_obfuscation": True,
+                    "is_directory_path_in_url": True,
+                }
+            )
+            for rec in s3_records:
                 rec._write_s3_fields_to_options()
         return records
 
