@@ -9,38 +9,27 @@
             ref="base_setup.res_config_settings_view_form"
         />
         <field name="arch" type="xml">
-            <xpath expr="//div[@id='generic_conf']" position="after">
-                <h2>Attachment Object Storage</h2>
-                <div
-                    class="o_settings_container"
-                    name="attachment_object_storage"
+            <xpath
+                expr="//app[@name='general_settings']/div[@id='about']"
+                position="before"
+            >
+                <block
+                    title="Attachment Object Storage"
+                    name="attachment_storage_block"
                 >
-                    <div class="row">
-                        <div
-                            class="col-12 col-lg-6 o_setting_box"
-                            title="Migrate all existing attachments from the database and filesystem to the configured S3 object storage. This action cannot be undone."
-                        >
-                            <div class="o_setting_left_pane" />
-                            <div class="o_setting_right_pane">
-                                <span class="o_setting_name">
-                                    Migrate attachments to object storage
-                                </span>
-                                <div class="text-muted">
-                                    Forces all existing attachments to be moved
-                                    from the database/filesystem to the
-                                    configured S3 storage backend.
-                                </div>
-                                <button
-                                    type="object"
-                                    name="action_force_migrate_to_s3"
-                                    string="Migrate Attachments to S3"
-                                    class="btn btn-primary mt8"
-                                    confirm="This will migrate ALL attachments from the database and filesystem to the configured S3 object storage. This operation may take a while for large volumes. Continue?"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <setting
+                        string="Migrate Attachments to S3"
+                        help="Migrate all existing attachments from the database and filesystem to the configured S3 object storage. This action cannot be undone."
+                    >
+                        <button
+                            type="object"
+                            name="action_force_migrate_to_s3"
+                            string="Force Migrate to S3"
+                            class="btn btn-primary"
+                            confirm="This will migrate ALL attachments to S3. This operation may take a while for large volumes. Continue?"
+                        />
+                    </setting>
+                </block>
             </xpath>
         </field>
     </record>
