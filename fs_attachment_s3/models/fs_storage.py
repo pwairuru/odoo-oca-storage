@@ -48,7 +48,7 @@ class FsStorage(models.Model):
 
     @api.onchange("protocol")
     def _onchange_protocol_s3(self):
-        """When protocol changes to S3, init fields from json_options."""
+        """When protocol changes to S3, init fields and set smart defaults."""
         if self.protocol == "s3":
             opts = self.json_options or {}
             self.s3_endpoint_url = opts.get("endpoint_url", "")
@@ -58,6 +58,11 @@ class FsStorage(models.Model):
             if isinstance(client_kwargs, dict):
                 self.s3_region = client_kwargs.get("region_name", "")
             self.s3_bucket = self.directory_path or ""
+            # Smart defaults for S3
+            self.use_as_default_for_attachments = True
+            self.optimizes_directory_path = True
+            self.use_filename_obfuscation = True
+            self.is_directory_path_in_url = True
 
     @api.onchange(
         "s3_endpoint_url",
@@ -120,6 +125,12 @@ class FsStorage(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get("protocol") == "s3":
+                vals.setdefault("use_as_default_for_attachments", True)
+                vals.setdefault("optimizes_directory_path", True)
+                vals.setdefault("use_filename_obfuscation", True)
+                vals.setdefault("is_directory_path_in_url", True)
         records = super().create(vals_list)
         for rec in records:
             if rec.protocol == "s3":
