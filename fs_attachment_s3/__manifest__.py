@@ -8,7 +8,7 @@
     "license": "AGPL-3",
     "author": "ACSONE SA/NV,Odoo Community Association (OCA)",
     "website": "https://github.com/OCA/storage",
-    "depends": ["fs_attachment"],
+    "depends": ["fs_attachment", "base_setup"],
     "external_dependencies": {
         "python": [
             "fsspec[s3]",
@@ -16,6 +16,7 @@
     },
     "data": [
         "views/fs_storage.xml",
+        "views/res_config_settings.xml",
     ],
     "maintainers": ["lmignon"],
     "installable": True,
