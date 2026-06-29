@@ -13,33 +13,23 @@ class FsStorage(models.Model):
 
     s3_endpoint_url = fields.Char(
         string="S3 Endpoint URL",
-        compute="_compute_s3_fields",
-        inverse="_inverse_s3_fields",
         help="The S3 endpoint URL (e.g. https://s3.amazonaws.com).",
     )
     s3_access_key_id = fields.Char(
         string="Access Key ID",
-        compute="_compute_s3_fields",
-        inverse="_inverse_s3_fields",
         help="Your S3 access key ID.",
     )
     s3_secret_access_key = fields.Char(
         string="Secret Access Key",
-        compute="_compute_s3_fields",
-        inverse="_inverse_s3_fields",
         password=True,
         help="Your S3 secret access key.",
     )
     s3_region = fields.Char(
         string="Region",
-        compute="_compute_s3_fields",
-        inverse="_inverse_s3_fields",
         help="The AWS region of your S3 bucket (e.g. us-east-1).",
     )
     s3_bucket = fields.Char(
         string="Bucket",
-        compute="_compute_s3_fields",
-        inverse="_inverse_s3_fields",
         help="The S3 bucket name where attachments will be stored.",
     )
 
@@ -56,42 +46,100 @@ class FsStorage(models.Model):
         "Default is 30 seconds.",
     )
 
-    @api.depends("json_options", "directory_path")
-    def _compute_s3_fields(self):
-        for rec in self:
-            rec.s3_endpoint_url = rec.json_options.get("endpoint_url", "")
-            rec.s3_access_key_id = rec.json_options.get("key", "")
-            rec.s3_secret_access_key = rec.json_options.get("secret", "")
-            rec.s3_region = (
-                rec.json_options.get("client_kwargs", {}).get("region_name", "")
-                if isinstance(rec.json_options.get("client_kwargs"), dict)
-                else ""
-            )
-            rec.s3_bucket = rec.directory_path or ""
+    @api.onchange("protocol")
+    def _onchange_protocol_s3(self):
+        """When protocol changes to S3, init fields from json_options."""
+        if self.protocol == "s3":
+            opts = self.json_options or {}
+            self.s3_endpoint_url = opts.get("endpoint_url", "")
+            self.s3_access_key_id = opts.get("key", "")
+            self.s3_secret_access_key = opts.get("secret", "")
+            client_kwargs = opts.get("client_kwargs", {}) or {}
+            if isinstance(client_kwargs, dict):
+                self.s3_region = client_kwargs.get("region_name", "")
+            self.s3_bucket = self.directory_path or ""
 
-    def _inverse_s3_fields(self):
-        for rec in self:
-            options = dict(rec.json_options)
-            options["endpoint_url"] = rec.s3_endpoint_url or None
-            options["key"] = rec.s3_access_key_id or None
-            options["secret"] = rec.s3_secret_access_key or None
-            client_kwargs = options.get("client_kwargs", {}) or {}
+    @api.onchange(
+        "s3_endpoint_url",
+        "s3_access_key_id",
+        "s3_secret_access_key",
+        "s3_region",
+        "s3_bucket",
+    )
+    def _onchange_s3_fields(self):
+        """Sync S3-specific fields to json_options and directory_path."""
+        if self.protocol != "s3":
+            return
+        self._write_s3_fields_to_options()
+
+    def _read_s3_fields_from_options(self):
+        """Populate S3 fields from json_options and directory_path."""
+        self.ensure_one()
+        opts = self.json_options or {}
+        self.s3_endpoint_url = opts.get("endpoint_url", "")
+        self.s3_access_key_id = opts.get("key", "")
+        self.s3_secret_access_key = opts.get("secret", "")
+        client_kwargs = opts.get("client_kwargs", {}) or {}
+        if isinstance(client_kwargs, dict):
+            self.s3_region = client_kwargs.get("region_name", "")
+        self.s3_bucket = self.directory_path or ""
+
+    def _write_s3_fields_to_options(self):
+        """Write S3-specific fields to json_options and directory_path."""
+        self.ensure_one()
+        if self.protocol != "s3":
+            return
+        opts = dict(self.json_options or {})
+        for opt_key, field_name in [
+            ("endpoint_url", "s3_endpoint_url"),
+            ("key", "s3_access_key_id"),
+            ("secret", "s3_secret_access_key"),
+        ]:
+            val = self[field_name]
+            if val:
+                opts[opt_key] = val
+            else:
+                opts.pop(opt_key, None)
+        if self.s3_region:
+            client_kwargs = opts.get("client_kwargs", {}) or {}
             if not isinstance(client_kwargs, dict):
                 client_kwargs = {}
-            if rec.s3_region:
-                client_kwargs["region_name"] = rec.s3_region
-            elif "region_name" in client_kwargs:
-                del client_kwargs["region_name"]
+            client_kwargs["region_name"] = self.s3_region
+            opts["client_kwargs"] = client_kwargs
+        else:
+            client_kwargs = opts.get("client_kwargs", {}) or {}
+            if isinstance(client_kwargs, dict):
+                client_kwargs.pop("region_name", None)
             if client_kwargs:
-                options["client_kwargs"] = client_kwargs
+                opts["client_kwargs"] = client_kwargs
             else:
-                options.pop("client_kwargs", None)
-            # Remove empty keys
-            keys_to_del = [k for k, v in options.items() if v is None]
-            for k in keys_to_del:
-                del options[k]
-            rec.json_options = options
-            rec.directory_path = rec.s3_bucket or None
+                opts.pop("client_kwargs", None)
+        self.json_options = opts
+        if self.s3_bucket:
+            self.directory_path = self.s3_bucket
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for rec in records:
+            if rec.protocol == "s3":
+                rec._write_s3_fields_to_options()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        s3_field_names = {
+            "s3_endpoint_url",
+            "s3_access_key_id",
+            "s3_secret_access_key",
+            "s3_region",
+            "s3_bucket",
+        }
+        if s3_field_names & set(vals.keys()):
+            for rec in self:
+                if rec.protocol == "s3":
+                    rec._write_s3_fields_to_options()
+        return res
 
     @property
     def _server_env_fields(self):
