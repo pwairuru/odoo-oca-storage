@@ -16,6 +16,49 @@
                     invisible="not use_x_sendfile_to_serve_internal_url or protocol != 's3'"
                 />
             </field>
+
+            <!-- Hide the complex JSON options field when protocol is S3 -->
+            <field name="options" position="attributes">
+                <attribute name="invisible">protocol == 's3'</attribute>
+            </field>
+
+            <!-- Hide directory_path when S3 (s3_bucket replaces it) -->
+            <field name="directory_path" position="attributes">
+                <attribute name="invisible">protocol == 's3'</attribute>
+            </field>
+
+            <!-- Show S3-specific simple fields -->
+            <field name="options" position="after">
+                <field
+                    name="s3_endpoint_url"
+                    string="Endpoint URL"
+                    invisible="protocol != 's3'"
+                    placeholder="https://s3.amazonaws.com"
+                />
+                <field
+                    name="s3_access_key_id"
+                    string="Access Key ID"
+                    invisible="protocol != 's3'"
+                />
+                <field
+                    name="s3_secret_access_key"
+                    string="Secret Access Key"
+                    invisible="protocol != 's3'"
+                    password="True"
+                />
+                <field
+                    name="s3_region"
+                    string="Region"
+                    invisible="protocol != 's3'"
+                    placeholder="us-east-1"
+                />
+                <field
+                    name="s3_bucket"
+                    string="Bucket"
+                    invisible="protocol != 's3'"
+                    placeholder="my-s3-bucket"
+                />
+            </field>
         </field>
     </record>
 </odoo>
