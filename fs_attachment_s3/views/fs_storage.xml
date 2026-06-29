@@ -37,12 +37,6 @@
             <field name="use_x_sendfile_to_serve_internal_url" position="attributes">
                 <attribute name="invisible">protocol == 's3'</attribute>
             </field>
-            <field name="s3_uses_signed_url_for_x_sendfile" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </field>
-            <field name="s3_signed_url_expiration" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </field>
 
             <!-- Hide notebook tabs (advanced) for S3 -->
             <xpath expr="//notebook" position="attributes">
