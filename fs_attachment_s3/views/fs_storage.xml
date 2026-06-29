@@ -44,11 +44,8 @@
                 <attribute name="invisible">1</attribute>
             </field>
 
-            <!-- Hide notebook tab pages (advanced) -->
-            <xpath expr="//page[@string='Protocol Descr']" position="attributes">
-                <attribute name="invisible">protocol == 's3'</attribute>
-            </xpath>
-            <xpath expr="//page[@string='Available options']" position="attributes">
+            <!-- Hide notebook tabs (advanced) for S3 -->
+            <xpath expr="//notebook" position="attributes">
                 <attribute name="invisible">protocol == 's3'</attribute>
             </xpath>
 
